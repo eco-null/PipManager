@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pip Cleaner — Pip-installed Module Manager</title>
+    <!-- Meta tags for SEO & local page details -->
+    <meta name="description"
+        content="A premium utility to inspect, analyze dependencies, find unused packages, and clean up python environment pip modules safely.">
+    <!-- Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <!-- CSS Link -->
+    <link rel="stylesheet" href="index.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- HEADER -->
+        <header class="app-header">
+            <div class="header-logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <h1>Pip<span>Cleaner</span></h1>
+                    <p class="tagline">Local Pip Dependency Manager</p>
+                </div>
+            </div>
+
+            <div class="env-badge-container">
+                <div class="env-info" id="envInfo">
+                    <div class="env-item">
+                        <span class="env-label">Python:</span>
+                        <span class="env-value" id="pythonVersion">Scanning...</span>
+                    </div>
+                    <div class="env-item text-truncate">
+                        <span class="env-label">Path:</span>
+                        <span class="env-value text-muted" id="sitePackagesPath" title="Loading...">Loading...</span>
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-secondary btn-icon" id="btnExport"
+                    title="Export currently visible packages to requirements.txt">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+                    </svg>
+                    <span>Export</span>
+                </button>
+                <button type="button" class="btn btn-secondary btn-icon" id="btnRefresh"
+                    title="Refresh local environment cache">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                    </svg>
+                    <span>Refresh</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- DASHBOARD METRICS SUMMARY -->
+        <section class="dashboard-grid">
+            <!-- Total packages Card -->
+            <div class="metric-card" id="cardTotal">
+                <div class="card-icon icon-purple">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                        <polyline points="7.5 4.21 12 6.81 16.5 4.21" />
+                        <polyline points="7.5 19.79 7.5 14.67 3 12" />
+                        <polyline points="21 12 16.5 14.67 16.5 19.79" />
+                        <polyline points="3 2vc 3 7 12 12 21 7 21 2" />
+                        <line x1="12" y1="22" x2="12" y2="12" />
+                    </svg>
+                </div>
+                <div class="card-content">
+                    <h3>Installed Modules</h3>
+                    <div class="metric-value" id="valTotalPackages">0</div>
+                    <div class="metric-sub" id="valTotalSize">0 MB total</div>
+                </div>
+            </div>
+
+            <!-- Orphans (Unused) Card -->
+            <div class="metric-card interactive" id="cardOrphans">
+                <div class="card-icon icon-emerald">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                </div>
+                <div class="card-content">
+                    <h3>Unused (Orphans)</h3>
+                    <div class="metric-value text-emerald" id="valOrphanPackages">0</div>
+                    <div class="metric-sub" id="valOrphanSize">0 MB cleanable</div>
+                </div>
+                <div class="card-badge badge-emerald">Safe to Delete</div>
+            </div>
+
+            <!-- Storage drive Card -->
+            <div class="metric-card" id="cardDisk">
+                <div class="card-icon icon-blue">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                        <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                        <line x1="6" y1="6" x2="6.01" y2="6" />
+                        <line x1="6" y1="18" x2="6.01" y2="18" />
+                    </svg>
+                </div>
+                <div class="card-content" style="width: 100%;">
+                    <h3>Storage Health</h3>
+                    <div class="metric-value" id="valDiskPercentage">0%</div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" id="diskProgress" style="width: 0%"></div>
+                    </div>
+                    <div class="metric-sub" id="valDiskFree">0 GB free on local drive</div>
+                </div>
+            </div>
+
+            <!-- Smart suggestion Card -->
+            <div class="metric-card suggestion-card" id="cardCleanupSuggestion">
+                <div class="card-content suggestion-layout">
+                    <div>
+                        <h3>Quick Cleaner</h3>
+                        <p id="cleanRecommendationText">All clean! No unused packages found.</p>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-sm" id="btnQuickClean"
+                        style="display: none; align-self: flex-start; max-width: max-content; margin-top: 4px;">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        <span>Clean Unused Modules</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- BATCH ACTIONS FLOATING PANEL -->
+        <div class="batch-action-bar hidden" id="batchActionBar">
+            <div class="batch-info">
+                <div class="batch-count-badge" id="batchCountBadge">0</div>
+                <div class="batch-text">
+                    <span id="batchCountText">No packages selected</span>
+                    <span class="batch-size" id="batchSizeText">0 MB total size</span>
+                </div>
+            </div>
+            <div class="batch-buttons">
+                <button type="button" class="btn btn-secondary btn-sm" id="btnBatchCancel">Cancel Selection</button>
+                <button type="button" class="btn btn-danger btn-sm" id="btnBatchUninstall">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7M5 7h14M10 11v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" />
+                    </svg>
+                    <span>Uninstall Selected</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- MAIN TABLE & LIST CONTAINER -->
+        <main class="content-panel">
+            <!-- FILTER & SEARCH BAR -->
+            <div class="filter-bar">
+                <div class="search-box">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <input type="text" id="searchInput" placeholder="Search by name, tags, description or author..."
+                        autocomplete="off">
+                </div>
+
+                <div class="filter-groups">
+                    <div class="btn-group" id="filterStatusGroup">
+                        <button type="button" class="btn btn-group-item active" data-filter="all">All Modules</button>
+                        <button type="button" class="btn btn-group-item" data-filter="unused">
+                            Unused <span class="badge" id="badgeCountUnused">0</span>
+                        </button>
+                        <button type="button" class="btn btn-group-item" data-filter="large">Large (>15MB)</button>
+                        <button type="button" class="btn btn-group-item" data-filter="editable">Editable/Local</button>
+                        <button type="button" class="btn btn-group-item" data-filter="core">System Core</button>
+                    </div>
+
+                    <div class="sort-selector">
+                        <label for="sortBySelect" class="label-muted">Sort By:</label>
+                        <select id="sortBySelect" class="custom-select">
+                            <option value="size_desc">Size (Largest)</option>
+                            <option value="size_asc">Size (Smallest)</option>
+                            <option value="name_asc">Name (A-Z)</option>
+                            <option value="name_desc">Name (Z-A)</option>
+                            <option value="deps_desc">Most Dependents</option>
+                            <option value="installed_desc">Installed (Newest)</option>
+                            <option value="installed_asc">Installed (Oldest)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LOADER STATE -->
+            <div class="loading-state" id="loadingState">
+                <div class="shimmer-spinner"></div>
+                <p>Analyzing pip environment & caching package directories...</p>
+            </div>
+
+            <!-- EMPTY RESULTS STATE -->
+            <div class="empty-state hidden" id="emptyState">
+                <div class="empty-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M8 12h8" />
+                    </svg>
+                </div>
+                <h3>No Matching Modules</h3>
+                <p>We couldn't find any packages matching your query or search criteria.</p>
+                <button type="button" class="btn btn-secondary btn-sm" id="btnResetFilters">Clear Search &
+                    Filters</button>
+            </div>
+
+            <!-- PACKAGE GRID -->
+            <div class="package-list-wrapper" id="packageListWrapper">
+                <table class="package-table" id="packageTable">
+                    <thead>
+                        <tr>
+                            <th class="col-checkbox">
+                                <label class="custom-checkbox">
+                                    <input type="checkbox" id="selectAllCheckbox">
+                                    <span class="checkmark"></span>
+                                </label>
+                            </th>
+                            <th class="col-name" data-sort="name">Module Name</th>
+                            <th class="col-version">Version</th>
+                            <th class="col-size" data-sort="size">Disk Size</th>
+                            <th class="col-installed" data-sort="installed">Installed Date</th>
+                            <th class="col-usage" data-sort="deps">Required By</th>
+                            <th class="col-summary">Description</th>
+                            <th class="col-actions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="packageTableBody">
+                        <!-- Dynamic rows will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+
+        <!-- FOOTER SIGNATURE -->
+        <footer class="app-footer">
+            <div class="footer-content">
+                <span>PipCleaner &copy; 2026</span>
+                <span class="divider">•</span>
+                <span>Created by <strong id="authorName">Can Özdal</strong></span>
+                <span class="divider">•</span>
+                <a href="https://github.com/eco-null" target="_blank" rel="noopener noreferrer"
+                    id="authorGithubLink">github.com/eco-null</a>
+            </div>
+        </footer>
+    </div>
+
+    <!-- MODAL 1: PACKAGE DETAIL DRAWER -->
+    <div class="modal-overlay hidden" id="detailModal">
+        <div class="modal-card modal-drawer">
+            <button type="button" class="modal-close" id="btnDetailClose" title="Close details">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+            </button>
+
+            <div class="drawer-header">
+                <div class="drawer-headline-row">
+                    <h2 class="drawer-title" id="detailName">Package Name</h2>
+                    <span class="drawer-version" id="detailVersion">1.0.0</span>
+                </div>
+                <p class="drawer-description" id="detailSummary">Small package description goes here.</p>
+                <div class="detail-badges" id="detailBadges">
+                    <!-- Badges insert here -->
+                </div>
+                <div class="detail-keep-wrapper">
+                    <label class="custom-checkbox flex-checkbox">
+                        <input type="checkbox" id="detailKeepCheckbox">
+                        <span class="checkmark"></span>
+                        <div class="checkbox-label-text inline-hint">
+                            <strong>Keep Package (Tag as Used)</strong>
+                            <p class="checkbox-hint">Exclude this package from unused categories and cleanup
+                                recommendations.</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="drawer-content">
+                <!-- Metadata items -->
+                <div class="details-grid">
+                    <div class="details-item">
+                        <span class="details-label">License</span>
+                        <span class="details-value" id="detailLicense">MIT</span>
+                    </div>
+                    <div class="details-item">
+                        <span class="details-label">Author</span>
+                        <span class="details-value" id="detailAuthor">John Doe</span>
+                    </div>
+                    <div class="details-item">
+                        <span class="details-label">Disk Footprint</span>
+                        <span class="details-value text-glow" id="detailSize">0 MB</span>
+                    </div>
+                    <div class="details-item">
+                        <span class="details-label">Total Files</span>
+                        <span class="details-value" id="detailFilesCount">0 files</span>
+                    </div>
+                </div>
+
+                <!-- Path location -->
+                <div class="detail-section">
+                    <h4>Installation Directory</h4>
+                    <pre
+                        class="path-block code-font"><code id="detailLocation">/path/to/environment/site-packages</code></pre>
+                </div>
+
+                <!-- Dependencies Tree Grid -->
+                <div class="detail-section">
+                    <h4>Dependency Analysis</h4>
+                    <div class="dependency-tree-card">
+                        <div class="dep-column">
+                            <h5>Required By (Dependents)</h5>
+                            <ul class="dep-list" id="detailRequiredByList">
+                                <!-- list packages that require this -->
+                            </ul>
+                        </div>
+                        <div class="dep-arrow">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14M12 5l7 7-7 7" />
+                            </svg>
+                        </div>
+                        <div class="dep-column">
+                            <h5>Dependencies (Requires)</h5>
+                            <ul class="dep-list" id="detailDependenciesList">
+                                <!-- list packages this depends on -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- External Links -->
+                <div class="detail-section" id="detailLinksSection">
+                    <h4>Project Resources</h4>
+                    <div class="project-links" id="detailLinksList">
+                        <!-- Links generated dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="drawer-footer">
+                <button type="button" class="btn btn-secondary" id="btnDetailCancel">Close</button>
+                <button type="button" class="btn btn-secondary btn-icon" id="btnDetailUpgrade"
+                    title="Upgrade this package to the latest version">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 19V5M5 12l7-7 7 7" />
+                    </svg>
+                    <span>Upgrade</span>
+                </button>
+                <button type="button" class="btn btn-secondary btn-icon" id="btnDetailUninstall"
+                    title="Uninstall this package from environment">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    <span>Uninstall</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: CONFIRM UNINSTALL DIALOG -->
+    <div class="modal-overlay hidden" id="confirmModal">
+        <div class="modal-card confirm-dialog">
+            <div class="dialog-header header-warning">
+                <div class="dialog-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path
+                            d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                        <line x1="12" y1="9" x2="12" y2="13" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
+                </div>
+                <h3>Proceed with Uninstall?</h3>
+            </div>
+
+            <div class="dialog-content">
+                <p>You are about to uninstall the following <strong id="confirmCountText">1 package</strong>:</p>
+                <div class="uninstall-preview-box" id="confirmTargetList">
+                    <!-- Main deletion list -->
+                </div>
+
+                <!-- CASCADE OPTION -->
+                <div class="cascade-toggle-box" id="cascadeBox">
+                    <label class="custom-checkbox">
+                        <input type="checkbox" id="cascadeCheckbox" checked>
+                        <span class="checkmark"></span>
+                        <div class="checkbox-label-text">
+                            <strong>Cascade Uninstall Unused Dependencies</strong>
+                            <p class="checkbox-hint">Automatically scan and clean up packages that will become orphans
+                                as a result.</p>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- CASCADE RESULT BOX -->
+                <div class="cascade-results hidden" id="cascadeResultsBox">
+                    <div class="cascade-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                            <path d="M12 15v3" />
+                        </svg>
+                        <span>Also Safe to Uninstall (Unused Dependencies)</span>
+                    </div>
+                    <div class="cascade-list" id="cascadeTargetList">
+                        <!-- Cascading items list -->
+                    </div>
+                </div>
+
+                <!-- ALERT WARNING FOR CRITICAL OR ACTIVE DEPENDENTS -->
+                <div class="system-warning-alert hidden" id="systemWarningAlert">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                        <line x1="12" y1="9" x2="12" y2="13" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
+                    <div class="alert-content">
+                        <strong>System Package Selection</strong>
+                        <p id="systemWarningAlertText">Some selection(s) are critical dependency or system core modules.
+                            Removing them may damage Python/pip ecosystem stability!</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dialog-footer">
+                <button type="button" class="btn btn-secondary" id="btnConfirmCancel">Cancel</button>
+                <button type="button" class="btn btn-danger" id="btnConfirmProceed">Confirm & Uninstall</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: RUN PROCESS TERMINAL OUTPUT -->
+    <div class="modal-overlay hidden" id="terminalModal" data-backdrop="static">
+        <div class="modal-card terminal-dialog">
+            <div class="terminal-header">
+                <div class="terminal-dots">
+                    <span class="dot-red"></span>
+                    <span class="dot-yellow"></span>
+                    <span class="dot-green"></span>
+                </div>
+                <div class="terminal-title">pip execution console</div>
+            </div>
+
+            <div class="terminal-body" id="terminalOutput">
+                <div class="console-line line-info">&gt; Initializing pip command transaction...</div>
+                <div class="console-line line-cmd">&gt; pip uninstall -y ...</div>
+                <div class="console-line line-loading"><span class="cursor-block"></span>Running uninstall subprocess,
+                    please wait...</div>
+            </div>
+
+            <div class="terminal-footer">
+                <button type="button" class="btn btn-primary" id="btnTerminalClose" disabled>Close Console</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JS Source -->
+    <script src="index.js"></script>
+</body>
+
+</html>
