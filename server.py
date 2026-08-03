@@ -16,6 +16,9 @@ import urllib.parse
 PORT = 49150  # Using a unique port to avoid conflicts
 CACHE_FILE = ".pip_manager_cache.json"
 
+# Only same-machine origins may call the local API (blocks cross-site requests)
+ALLOWED_ORIGINS = {f"http://localhost:{PORT}", f"http://127.0.0.1:{PORT}"}
+
 # Core packages that should not be deleted without warning
 CORE_PACKAGES = {
     'pip', 'setuptools', 'wheel', 'distribute', 'virtualenv', 
@@ -29,6 +32,7 @@ execution_lock = threading.Lock()
 # Cached data
 packages_cache = {}
 stats_cache = {}
+site_packages_path = None
 
 def normalize_name(name):
     if not name:
@@ -88,14 +92,13 @@ def get_disk_statistics(site_packages_path):
             return {"total": 0, "used": 0, "free": 0, "percentage": 0}
 
 def scan_packages():
-    global packages_cache, stats_cache
+    global packages_cache, stats_cache, site_packages_path
     with cache_lock:
         disk_cache, kept_packages = load_disk_size_cache()
         dists = list(importlib.metadata.distributions())
         
         packages = {}
         cache_updated = False
-        site_packages_path = None
 
         # Pass 1: Gather package details & calculate sizes
         for dist in dists:
@@ -388,15 +391,23 @@ class PipManagerHandler(BaseHTTPRequestHandler):
     def send_json(self, data, status=200):
         self.send_response(status)
         self.send_header('Content-Type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        origin = self.headers.get('Origin')
+        if origin in ALLOWED_ORIGINS:
+            self.send_header('Access-Control-Allow-Origin', origin)
+            self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+            self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.end_headers()
         self.wfile.write(json.dumps(data).encode('utf-8'))
 
     def do_OPTIONS(self):
+        origin = self.headers.get('Origin')
+        if origin and origin not in ALLOWED_ORIGINS:
+            self.send_response(403)
+            self.end_headers()
+            return
         self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin', '*')
+        if origin:
+            self.send_header('Access-Control-Allow-Origin', origin)
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.end_headers()
@@ -426,10 +437,18 @@ class PipManagerHandler(BaseHTTPRequestHandler):
             self.wfile.write(b"404 Not Found")
 
     def do_POST(self):
+        origin = self.headers.get('Origin')
+        if origin and origin not in ALLOWED_ORIGINS:
+            self.send_json({"success": False, "error": "Forbidden origin"}, status=403)
+            return
+
         url = urllib.parse.urlparse(self.path)
         path = url.path
         
-        content_length = int(self.headers.get('Content-Length', 0))
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+        except (TypeError, ValueError):
+            content_length = 0
         post_data = self.rfile.read(content_length)
         
         try:

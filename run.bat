@@ -1,9 +1,9 @@
 @echo off
-title Pip Cleaner Launcher
+title Pip Manager Launcher
 echo ===================================================
-echo             P I P   C L E A N E R
+echo             P I P   M A N A G E R
 echo ===================================================
-echo Starting Pip Cleaner Local Web Server...
+echo Starting Pip Manager Local Web Server...
 echo The application will automatically open in your default browser.
 echo Press Ctrl+C in this command prompt to stop the server.
 echo ===================================================

@@ -1,6 +1,6 @@
-# PipCleaner
+# PipManager
 
-**PipCleaner** is a lightweight, high-performance visual package manager with a modern Web GUI designed to simplify python environment package auditing and cleanup. Built strictly with standard Python libraries and vanilla Javascript/CSS, it is completely self-contained and zero-dependency.
+**PipManager** is a lightweight, high-performance visual package manager with a modern Web GUI designed to simplify python environment package auditing and cleanup. Built strictly with standard Python libraries and vanilla Javascript/CSS, it is completely self-contained and zero-dependency.
 
 ## Key Features
 

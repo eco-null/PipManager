@@ -1,5 +1,5 @@
 /*
- * Pip Cleaner Stylesheet — Sleek Dark Mode with Glassmorphism
+ * Pip Manager Stylesheet — Sleek Dark Mode with Glassmorphism
  */
 
 :root {
@@ -13,6 +13,7 @@
 
     --accent-gradient: linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%);
     --bg-gradient: radial-gradient(circle at 50% 50%, #15102a 0%, #080810 100%);
+    --accent-glow: rgba(139, 92, 246, 0.35);
 
     --text-primary: #f8fafc;
     --text-secondary: #94a3b8;
@@ -37,7 +38,7 @@
     --glass-border: rgba(255, 255, 255, 0.05);
     --glass-shadow: rgba(0, 0, 0, 0.4);
 
-    --font-sans: 'Plus Jakarta Sans', 'Outfit', -apple-system, BlinkMacSystemFont, inherit;
+    --font-sans: 'Plus Jakarta Sans', 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-mono: 'Fira Code', 'Courier New', Courier, monospace;
 
     --transition-fast: 0.15s ease;
@@ -282,6 +283,18 @@ h5 {
 .btn-danger:hover {
     background: #dc2626;
     box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-warning {
+    background: var(--warning);
+    color: white;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+
+.btn-warning:hover {
+    background: #d97706;
+    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4);
     transform: translateY(-1px);
 }
 
@@ -938,6 +951,11 @@ h5 {
     display: none !important;
 }
 
+/* Prevent the page behind a modal from scrolling */
+body.modal-open {
+    overflow: hidden;
+}
+
 .modal-card {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -979,7 +997,7 @@ h5 {
     top: 0;
     height: 100%;
     max-height: 100vh;
-    width: min(100%, 540px);
+    width: min(100%, 600px);
     border-radius: 20px 0 0 20px;
     border-left: 1px solid var(--border-color);
     border-top: none;
@@ -1072,6 +1090,14 @@ h5 {
     text-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
 }
 
+.text-emerald {
+    color: var(--success);
+}
+
+.text-muted {
+    color: var(--text-muted);
+}
+
 .detail-section h4 {
     font-size: 0.8rem;
     text-transform: uppercase;
@@ -1106,10 +1132,11 @@ h5 {
 
 .dep-column {
     flex: 1;
+    min-width: 0;
     padding: 1rem;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
 }
 
 .dep-column h5 {
@@ -1118,15 +1145,17 @@ h5 {
     color: var(--text-muted);
     text-transform: uppercase;
     border-bottom: 1.5px solid var(--border-color);
-    padding-bottom: 4px;
+    padding-bottom: 6px;
     margin-bottom: 2px;
+    flex-shrink: 0;
 }
 
 .dep-arrow {
     display: flex;
     align-items: center;
     color: var(--border-hover);
-    padding: 0 4px;
+    padding: 0 6px;
+    flex-shrink: 0;
 }
 
 .dep-arrow svg {
@@ -1138,22 +1167,39 @@ h5 {
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    max-height: 140px;
+    gap: 6px;
+    max-height: 240px;
     overflow-y: auto;
+    padding-right: 2px;
+}
+
+/* Fully expanded state (after "Show more"): wrap names instead of truncating */
+.dep-list.expanded {
+    max-height: none;
+    overflow: visible;
+}
+
+.dep-list.expanded .dep-item {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    word-break: break-word;
+    line-height: 1.5;
 }
 
 .dep-item {
-    font-size: 0.775rem;
+    font-size: 0.8rem;
+    line-height: 1.4;
     color: var(--text-secondary);
-    padding: 3px 6px;
+    padding: 6px 10px;
     background: var(--bg-primary);
     border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: 8px;
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;
     cursor: pointer;
+    transition: border-color var(--transition-fast), color var(--transition-fast);
 }
 
 .dep-item:hover {
@@ -1164,8 +1210,21 @@ h5 {
 .dep-item-empty {
     font-style: italic;
     color: var(--text-muted);
-    font-size: 0.75rem;
-    padding: 3px 0;
+    font-size: 0.775rem;
+    padding: 6px 10px;
+}
+
+.dep-item-more {
+    font-size: 0.775rem;
+    color: var(--accent-violet);
+    padding: 6px 10px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: color var(--transition-fast);
+}
+
+.dep-item-more:hover {
+    color: white;
 }
 
 .project-links {
@@ -1465,6 +1524,14 @@ h5 {
     color: #f59e0b;
 }
 
+.line-success {
+    color: var(--success);
+}
+
+.line-error {
+    color: var(--error);
+}
+
 .line-loading {
     color: var(--text-muted);
     display: flex;
@@ -1667,6 +1734,18 @@ body {
     box-shadow: none !important;
 }
 
+.btn-warning {
+    background: #f59e0b !important;
+    color: white !important;
+    box-shadow: none !important;
+}
+
+.btn-warning:hover {
+    background: #d97706 !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
 /* Quick clean recommendation button: Small and outline */
 #btnQuickClean {
     background: transparent !important;
@@ -1678,7 +1757,6 @@ body {
     border-radius: 6px !important;
     transition: all var(--transition-fast) !important;
     outline: none !important;
-    display: inline-flex !important;
     align-items: center !important;
     gap: 6px !important;
     max-width: max-content !important;

@@ -1,5 +1,5 @@
 /**
- * Pip Cleaner — Frontend Orchestrator Script
+ * Pip Manager — Frontend Orchestrator Script
  */
 
 // Application State
@@ -95,8 +95,8 @@ const dom = {
     btnTerminalClose: document.getElementById('btnTerminalClose')
 };
 
-// Constants
-const SYSTEM_CORE_PACKAGES = ['pip', 'setuptools', 'wheel', 'distribute', 'virtualenv', 'conda'];
+// Constants removed: frontend no longer needs a local core-packages list
+// (system-core status comes from the backend).
 
 // Format File Size
 function formatSize(bytes) {
@@ -115,6 +115,35 @@ function formatDate(timestamp) {
     return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+// Escape HTML entities to prevent XSS from package metadata
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+// Lock/unlock body scroll while any modal overlay is visible
+let openModalCount = 0;
+function showModal(el) {
+    if (el.classList.contains('hidden')) {
+        el.classList.remove('hidden');
+        openModalCount++;
+        document.body.classList.add('modal-open');
+    }
+}
+function hideModal(el) {
+    if (!el.classList.contains('hidden')) {
+        el.classList.add('hidden');
+        openModalCount = Math.max(0, openModalCount - 1);
+        if (openModalCount === 0) {
+            document.body.classList.remove('modal-open');
+        }
+    }
+}
+
 // Render extendable dependency list to avoid squished styling
 function renderExtendableList(container, items, labelWhenEmpty) {
     container.innerHTML = '';
@@ -129,6 +158,7 @@ function renderExtendableList(container, items, labelWhenEmpty) {
         const li = document.createElement('li');
         li.className = 'dep-item';
         li.textContent = name;
+        li.title = name;
         li.addEventListener('click', () => {
             const targetPkg = state.packages.find(p => p.norm_name === name);
             if (targetPkg) openPackageDetails(targetPkg);
@@ -151,6 +181,7 @@ function renderExtendableList(container, items, labelWhenEmpty) {
         moreLi.addEventListener('click', (e) => {
             e.stopPropagation();
             moreLi.remove();
+            container.classList.add('expanded');
             for (let i = maxInitial - 1; i < items.length; i++) {
                 container.appendChild(createItemEl(items[i]));
             }
@@ -318,9 +349,14 @@ function renderTable() {
 
         // Required by pill details
         const dependentsCount = pkg.required_by.length;
+        const requiredByTitle = escapeHtml(pkg.required_by.join(', '));
         const requiredByText = dependentsCount === 0
             ? '<span class="dependent-count-pill none">None</span>'
-            : `<span class="dependent-count-pill" title="${pkg.required_by.join(', ')}">${dependentsCount} package${dependentsCount === 1 ? '' : 's'}</span>`;
+            : `<span class="dependent-count-pill" title="${requiredByTitle}">${dependentsCount} package${dependentsCount === 1 ? '' : 's'}</span>`;
+
+        const safeName = escapeHtml(pkg.name);
+        const safeVersion = escapeHtml(pkg.version);
+        const safeSummary = escapeHtml(pkg.summary || '');
 
         tr.innerHTML = `
             <td class="col-checkbox">
@@ -329,12 +365,12 @@ function renderTable() {
                     <span class="checkmark"></span>
                 </label>
             </td>
-            <td class="col-name">${pkg.name} ${statusBadgesHtml}</td>
-            <td class="col-version">${pkg.version}</td>
+            <td class="col-name">${safeName} ${statusBadgesHtml}</td>
+            <td class="col-version">${safeVersion}</td>
             <td class="col-size">${formatSize(pkg.size_bytes)}</td>
             <td class="col-installed">${formatDate(pkg.installed_at)}</td>
             <td class="col-usage">${requiredByText}</td>
-            <td class="col-summary" title="${pkg.summary || ''}">${pkg.summary || '<span class="text-muted">No description.</span>'}</td>
+            <td class="col-summary" title="${safeSummary}">${safeSummary || '<span class="text-muted">No description.</span>'}</td>
             <td class="col-actions">
                 <button type="button" class="btn-action-delete" title="Uninstall this module">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -480,12 +516,12 @@ function openPackageDetails(pkg) {
     }
 
     // Show modal drawer overlay
-    dom.detailModal.classList.remove('hidden');
+    showModal(dom.detailModal);
 }
 
 // Close detail modal drawer panel
 function closePackageDetails() {
-    dom.detailModal.classList.add('hidden');
+    hideModal(dom.detailModal);
     state.activePackage = null;
 }
 
@@ -540,7 +576,7 @@ async function openUninstallConfirm(packageNormNames) {
 
     await fetchCascadeDryRun();
 
-    dom.confirmModal.classList.remove('hidden');
+    showModal(dom.confirmModal);
 }
 
 // Fetch Cascade dry run targets
@@ -584,7 +620,7 @@ async function fetchCascadeDryRun() {
 
 // Close confirmation modal
 function closeUninstallConfirm() {
-    dom.confirmModal.classList.add('hidden');
+    hideModal(dom.confirmModal);
     activeUninstallTargets = [];
     activeCascadeTargets = [];
 }
@@ -611,7 +647,7 @@ async function executeUninstall() {
         <div class="console-line line-cmd">&gt; python -m pip uninstall -y ${targets.join(' ')}</div>
         <div class="console-line line-loading"><span class="cursor-block"></span>Executing transaction on background terminal...</div>
     `;
-    dom.terminalModal.classList.remove('hidden');
+    showModal(dom.terminalModal);
 
     try {
         const res = await fetch('/api/uninstall', {
@@ -673,7 +709,7 @@ async function executeUpgrade(targets) {
         <div class="console-line line-cmd">&gt; pip install --upgrade ${targets.join(' ')}</div>
         <div class="console-line line-loading"><span class="cursor-block"></span>Executing upgrade subprocess, please wait...</div>
     `;
-    dom.terminalModal.classList.remove('hidden');
+    showModal(dom.terminalModal);
 
     try {
         const res = await fetch('/api/upgrade', {
@@ -746,7 +782,7 @@ function exportRequirements() {
 
 // Close terminal logs modal console
 function closeTerminalConsole() {
-    dom.terminalModal.classList.add('hidden');
+    hideModal(dom.terminalModal);
 }
 
 // BIND COMPONENT DOM EVENTS
