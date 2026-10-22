@@ -1,12 +1,17 @@
 @echo off
-title Pip Manager Launcher
+setlocal
+title Pip Manager
 echo ===================================================
-echo             P I P   M A N A G E R
-echo ===================================================
-echo Starting Pip Manager Local Web Server...
-echo The application will automatically open in your default browser.
-echo Press Ctrl+C in this command prompt to stop the server.
+echo   Pip Manager - Local Environment Inspector
 echo ===================================================
 echo.
-python server.py
+
+where python >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+    echo [ERROR] Python is not installed or not in PATH!
+    pause
+    exit /b 1
+)
+
+python server.py %*
 pause
